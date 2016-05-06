@@ -70,36 +70,42 @@ static NSTimer *timer;
             [MainWindow addSubview:toastView];
             isShowing = YES;
         }
-        
-        CABasicAnimation *opacityLayerAnimation1 = [CABasicAnimation animationWithKeyPath:@"opacity"];
-        opacityLayerAnimation1.duration = 0.5;
-        opacityLayerAnimation1.fromValue = [NSNumber numberWithFloat:toastView.alpha];
-        opacityLayerAnimation1.toValue = [NSNumber numberWithFloat:1];
-        opacityLayerAnimation1.removedOnCompletion = NO;
-        opacityLayerAnimation1.fillMode = kCAFillModeForwards;
-        opacityLayerAnimation1.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-        
-        CABasicAnimation *opacityLayerAnimation3 = [CABasicAnimation animationWithKeyPath:@"opacity"];
-        opacityLayerAnimation3.beginTime = 2.5f;
-        opacityLayerAnimation3.duration = 0.5;
-        opacityLayerAnimation3.fromValue = [NSNumber numberWithFloat:1];
-        opacityLayerAnimation3.toValue = [NSNumber numberWithFloat:0];
-        opacityLayerAnimation3.removedOnCompletion = NO;
-        opacityLayerAnimation3.fillMode = kCAFillModeForwards;
-        opacityLayerAnimation3.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-        
-        opacityLayerAnimationGroup = [CAAnimationGroup animation];
-        opacityLayerAnimationGroup.animations = [NSArray arrayWithObjects:opacityLayerAnimation1,opacityLayerAnimation3, nil];
-        opacityLayerAnimationGroup.duration = 3;
-        opacityLayerAnimationGroup.delegate = self;
-        opacityLayerAnimationGroup.removedOnCompletion = NO;
-        opacityLayerAnimationGroup.fillMode = kCAFillModeForwards;
-        opacityLayerAnimationGroup.repeatCount = 1;
-        
-        [opacityLayerAnimationGroup setValue:@"toastViewOpacity" forKey:@"animationValue"];
-        
-        [toastView.layer addAnimation:opacityLayerAnimationGroup forKey:@"toastViewOpacity"];
+        [toastView.layer addAnimation:[self getAnimationGroup] forKey:@"toastViewOpacity"];
     });
+}
+
++(CAAnimationGroup *)getAnimationGroup{
+    if (opacityLayerAnimationGroup) {
+        return opacityLayerAnimationGroup;
+    }
+    CABasicAnimation *opacityLayerAnimation1 = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    opacityLayerAnimation1.duration = 0.5;
+    opacityLayerAnimation1.fromValue = [NSNumber numberWithFloat:toastView.alpha];
+    opacityLayerAnimation1.toValue = [NSNumber numberWithFloat:1];
+    opacityLayerAnimation1.removedOnCompletion = NO;
+    opacityLayerAnimation1.fillMode = kCAFillModeForwards;
+    opacityLayerAnimation1.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    
+    CABasicAnimation *opacityLayerAnimation3 = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    opacityLayerAnimation3.beginTime = 2.5f;
+    opacityLayerAnimation3.duration = 0.5;
+    opacityLayerAnimation3.fromValue = [NSNumber numberWithFloat:1];
+    opacityLayerAnimation3.toValue = [NSNumber numberWithFloat:0];
+    opacityLayerAnimation3.removedOnCompletion = NO;
+    opacityLayerAnimation3.fillMode = kCAFillModeForwards;
+    opacityLayerAnimation3.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    
+    opacityLayerAnimationGroup = [CAAnimationGroup animation];
+    opacityLayerAnimationGroup.animations = [NSArray arrayWithObjects:opacityLayerAnimation1,opacityLayerAnimation3, nil];
+    opacityLayerAnimationGroup.duration = 3;
+    opacityLayerAnimationGroup.delegate = self;
+    opacityLayerAnimationGroup.removedOnCompletion = NO;
+    opacityLayerAnimationGroup.fillMode = kCAFillModeForwards;
+    opacityLayerAnimationGroup.repeatCount = 1;
+    
+    [opacityLayerAnimationGroup setValue:@"toastViewOpacity" forKey:@"animationValue"];
+    
+    return opacityLayerAnimationGroup;
 }
 
 static float XYToastView_KeyboardIsShowingHieght = 0;
@@ -134,10 +140,12 @@ static float XYToastView_KeyboardIsShowingHieght = 0;
 }
 
 +(void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag{
-    NSString *animationType = [anim valueForKey:@"animationValue"];
-    if ([animationType isEqualToString:@"toastViewOpacity"]) {
-        [toastView removeFromSuperview];
-        isShowing = NO;
+    if (flag) {
+        NSString *animationType = [anim valueForKey:@"animationValue"];
+        if ([animationType isEqualToString:@"toastViewOpacity"]) {
+            [toastView removeFromSuperview];
+            isShowing = NO;
+        }
     }
 }
 

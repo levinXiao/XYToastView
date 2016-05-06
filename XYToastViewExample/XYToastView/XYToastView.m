@@ -1,15 +1,16 @@
 //
 //  BYToastView.m
+//  ByidsMIOAS
 //
-//  Created by xiaoyu on 15/3/6.
+//  Created by 肖宇 on 15/3/6.
 //  Copyright (c) 2015年  All rights reserved.
 //
 
-#import "XYToastView.h"
+#import "BYToastView.h"
+#import "Macros.h"
 #import <UIKit/UIKit.h>
 
-
-@implementation XYToastView
+@implementation BYToastView
 
 static UIView *toastView;
 
@@ -21,7 +22,13 @@ static bool isShowing;
 
 static NSTimer *timer;
 
-#define toastViewMarginHeight [UIScreen mainScreen].bounds.size.height -85
+#define toastViewMarginHeight [UIScreen mainScreen].bounds.size.height - 120
+
++(void)initialize{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidHide:) name:UIKeyboardDidHideNotification object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidShow:) name:UIKeyboardDidShowNotification object:nil];
+}
 
 +(void)showToastWithMessage:(NSString *)messageString{
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -34,21 +41,33 @@ static NSTimer *timer;
             messageButton = [[UIButton alloc]init];
             messageButton.titleLabel.font = [UIFont systemFontOfSize:12.0f];
             messageButton.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-            [messageButton setTitleColor:[UIColor colorWithRed:220/255.f green:220/255.f blue:220/255.f alpha:1] forState:UIControlStateNormal];
+            [messageButton setTitleColor:RGBAColor(220, 220, 220, 1) forState:UIControlStateNormal];
             [toastView addSubview:messageButton];
             isShowing = NO;
         }
         
-        CGSize size = [XYToastView sizeWithString:messageString andLabelSize:CGSizeMake(HUGE_VAL, 25) andFont:messageButton.titleLabel.font];
-        if (size.width >= [UIScreen mainScreen].bounds.size.width - 50*2) {
-            size.width = [UIScreen mainScreen].bounds.size.width - 50*2;
+        CGSize size = [BYToastView sizeWithString:messageString andLabelSize:CGSizeMake(HUGE_VAL, 25) andFont:messageButton.titleLabel.font];
+        if (size.width >= GLOBALWIDTH - 50*2) {
+            size.width = GLOBALWIDTH - 50*2;
         }
-        toastView.frame = (CGRect){([UIScreen mainScreen].bounds.size.width-(size.width+20*2))/2,toastViewMarginHeight,size.width+20*2,25};
+        if (XYToastView_KeyboardIsShowingHieght == 0) {
+            toastView.frame = (CGRect){(GLOBALWIDTH-(size.width+20*2))/2,toastViewMarginHeight,size.width+20*2,25};
+        }else{
+            toastView.frame = (CGRect){
+                (GLOBALWIDTH-(size.width+20*2))/2,
+                [UIScreen mainScreen].bounds.size.height -fabs(XYToastView_KeyboardIsShowingHieght) - 60,
+                size.width+20*2,
+                25
+            };
+        }
+        NSLog(@"%@",NSStringFromCGRect(toastView.frame));
+        
+        
         messageButton.frame = (CGRect){20,0,size.width,25};
         [messageButton setTitle:messageString forState:UIControlStateNormal];
         
         if (!isShowing) {
-            [[UIApplication sharedApplication].keyWindow addSubview:toastView];
+            [MainWindow addSubview:toastView];
             isShowing = YES;
         }
         
@@ -83,13 +102,42 @@ static NSTimer *timer;
     });
 }
 
+static float XYToastView_KeyboardIsShowingHieght = 0;
++(void)keyboardDidHide:(NSNotification *)notification{
+    XYToastView_KeyboardIsShowingHieght = 0;
+}
+
++(void)keyboardDidShow:(NSNotification *)notification{
+    NSDictionary *info = [notification userInfo];
+    
+    CGRect beginKeyboardRect = [[info objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue];
+    
+    CGRect endKeyboardRect = [[info objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    
+    CGFloat yOffset = endKeyboardRect.origin.y - beginKeyboardRect.origin.y;
+    
+    if (yOffset < -120) {
+        XYToastView_KeyboardIsShowingHieght = yOffset;
+    }
+    NSLog(@"XYToastView_KeyboardIsShowingHieght  %f",XYToastView_KeyboardIsShowingHieght);
+    
+    if (toastView) {
+        CGRect rect = toastView.frame;
+        
+        toastView.frame = (CGRect){
+            rect.origin.x,
+            [UIScreen mainScreen].bounds.size.height + yOffset - 60,
+            rect.size.width,
+            rect.size.height
+        };
+    }
+}
+
 +(void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag{
-    if (flag) {
-        NSString *animationType = [anim valueForKey:@"animationValue"];
-        if ([animationType isEqualToString:@"toastViewOpacity"]) {
-            [toastView removeFromSuperview];
-            isShowing = NO;
-        }
+    NSString *animationType = [anim valueForKey:@"animationValue"];
+    if ([animationType isEqualToString:@"toastViewOpacity"]) {
+        [toastView removeFromSuperview];
+        isShowing = NO;
     }
 }
 
@@ -98,11 +146,21 @@ static NSTimer *timer;
         NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc]init];
         paragraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
         NSDictionary *attributes = @{NSFontAttributeName:font, NSParagraphStyleAttributeName:paragraphStyle.copy};
-        CGSize size1 =[string boundingRectWithSize:size options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil].size;
-        return size1;
+        CGSize sizeTmp =[string boundingRectWithSize:size options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil].size;
+        return sizeTmp;
     }else{
         return [string sizeWithFont:font constrainedToSize:size lineBreakMode:NSLineBreakByCharWrapping];
     }
+}
+
+@end
+
+
+@implementation UIApplication (KeyBoardNotification)
+
++(void)initialize{
+    [super initialize];
+    [BYToastView initialize];
 }
 
 @end

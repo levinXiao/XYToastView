@@ -6,7 +6,7 @@
 //  Copyright (c) 2015年  All rights reserved.
 //
 
-#import "BYToastView.h"
+#import "XYToastView.h"
 #import "Macros.h"
 #import <UIKit/UIKit.h>
 
